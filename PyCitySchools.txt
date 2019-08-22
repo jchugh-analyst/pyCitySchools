@@ -1,0 +1,80 @@
+import pandas as pd
+
+student_df= pd.read_csv(r'D:\Users\jchugh\Downloads\PyCitySchools_student.csv')
+student_df.head()
+
+school_df= pd.read_csv(r'D:\Users\jchugh\Downloads\PyCitySchools.csv')
+school_df.head()
+
+complete_df = pd.merge(student_df, school_df, how="left", on=["school_name", "school_name"])
+complete_df.head()
+
+summary1=complete_df.agg({ 'school_name':'nunique', 'Student ID':'count', 
+                 'math_score': {'avg math score':'mean', 'pct passing math' : lambda x: 100* ((x>=70).sum() / x.count())} ,
+                 'reading_score':{'avg reading score':'mean', 'pct passing reading' : lambda x: 100* ((x>=70).sum() / x.count())} 
+                }).stack().to_frame().T
+
+
+summary1["total buget"]=school_df["budget"].sum()
+summary1
+
+summary1["overall_passing_rate"]= (complete_df['math_score'].mean()+complete_df['reading_score'].mean())/2
+summary1
+
+summary2 =complete_df.groupby(["school_name", 'type']).agg({'Student ID':'count', 
+                                                  'budget': {'total': 'mean', 
+                                                             'per_student' :lambda x: x.mean()/ x.count()}, 
+                                                  'math_score':{'avg': 'mean',
+                                                                'pct pass': lambda x: 100* ((x>=70).sum()/x.count())} ,
+                                                  'reading_score':{'avg': 'mean',
+                                                                'pct pass': lambda x: 100* ((x>=70).sum()/x.count())} ,
+                                                }).reset_index()
+
+
+summary2.columns = ['_'.join(tup).rstrip('_') for tup in summary2.columns.values]
+summary2.head()
+summary2["overall_passing_rate"]= (summary2['math_score_pct pass']+summary2['reading_score_pct pass'])/2
+
+
+summary2.sort_values('overall_passing_rate', ascending =False).head()
+
+summary2.sort_values('overall_passing_rate').head()
+
+complete_df.groupby(["school_name", 'grade']).agg({'math_score':'mean'}).unstack('grade')
+
+complete_df.groupby(["school_name", 'grade']).agg({'reading_score':'mean'}).unstack('grade')
+
+spending_bins = [0, 585, 615, 645, 675]
+group_names = ["<$585", "$585-615", "$615-645", "$645-675"]
+
+summary2["Spending Ranges"]=pd.cut(summary2['budget_per_student'], bins=spending_bins , labels=group_names)
+       
+
+summary2.sort_values("Spending Ranges").head(1)
+
+summary2.groupby("Spending Ranges").agg({'math_score_avg':'mean',
+                                        'reading_score_avg':'mean', 
+                                         'math_score_pct pass': 'mean', 
+                                         'reading_score_pct pass':'mean', 
+                                         'overall_passing_rate':'mean'
+                                        })
+
+size_bins = [0, 1000, 2000, 5000]
+group_names2 = ["Small (<1000)", "Medium (1000-2000)", "Large (2000-5000)"]
+
+summary2["school size"]=pd.cut(summary2['Student ID_count'], bins=size_bins , labels=group_names2)
+
+summary2.groupby("school size").agg({'math_score_avg':'mean',
+                                        'reading_score_avg':'mean', 
+                                         'math_score_pct pass': 'mean', 
+                                         'reading_score_pct pass':'mean', 
+                                         'overall_passing_rate':'mean'
+                                        })
+
+summary2.groupby("type").agg({'math_score_avg':'mean',
+                                        'reading_score_avg':'mean', 
+                                         'math_score_pct pass': 'mean', 
+                                         'reading_score_pct pass':'mean', 
+                                         'overall_passing_rate':'mean'
+                                        })
+
