@@ -1,4 +1,4 @@
-# Unit 4 | Project - Pandas, Pandas, Pandas
+Project - Pandas, Pandas, Pandas
 
 Academy of Py
 
